@@ -4,6 +4,9 @@ package edu.temple.cis.c3238.banksim;
  * @author Modified by Paul Wolfgang
  * @author Modified by Charles Wang
  */
+import java.io.*; 
+import java.util.*;
+
 class TransferThread extends Thread {
 
     private final Bank bank;
@@ -21,7 +24,10 @@ class TransferThread extends Thread {
         for (int i = 0; i < 10000; i++) {
             int toAccount = (int) (bank.size() * Math.random());
             int amount = (int) (maxAmount * Math.random());
+            
+            synchronized(bank){
             bank.transfer(fromAccount, toAccount, amount);
+            }
         }
     }
 }
