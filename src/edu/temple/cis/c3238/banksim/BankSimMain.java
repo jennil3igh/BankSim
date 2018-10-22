@@ -19,8 +19,8 @@ public class BankSimMain {
             threads[i].start();
         }
 
-//        b.test();
-          System.out.printf("Bank transfer is in the process.\n");
+        b.test();
+        System.out.printf("Bank transfer is in the process.\n");
     }
 }
 
