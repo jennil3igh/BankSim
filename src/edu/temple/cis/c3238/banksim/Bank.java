@@ -1,5 +1,6 @@
 package edu.temple.cis.c3238.banksim;
 
+import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author Cay Horstmann
  * @author Modified by Paul Wolfgang
@@ -13,6 +14,7 @@ public class Bank {
     private long ntransacts = 0;
     private final int initialBalance;
     private final int numAccounts;
+    private final ReentrantLock rlock = new ReentrantLock();
 
     public Bank(int numAccounts, int initialBalance) {
         this.initialBalance = initialBalance;
@@ -25,20 +27,49 @@ public class Bank {
     }
 
     public void transfer(int from, int to, int amount) {
-//        accounts[from].waitForAvailableFunds(amount);
+   
+        rlock.lock();
         if (accounts[from].withdraw(amount)) {
             accounts[to].deposit(amount);
         }
-        if (shouldTest()) test();
-    }
+        rlock.unlock();
+
+        rlock.lock();
+        try {
+
+            if (accounts[from].withdraw(amount)) {
+                accounts[to].deposit(amount);
+            }
+
+        } finally {
+            rlock.unlock();
+        }
+        if (shouldTest()) {
+            test();
+        }
+
+}
 
     public void test() {
+        
         int sum = 0;
-        for (Account account : accounts) {
-            System.out.printf("%s %s%n", 
+        
+        rlock.lock();
+        
+        try {
+            
+            for (Account account : accounts) {
+                System.out.printf("%s %s%n", 
                     Thread.currentThread().toString(), account.toString());
-            sum += account.getBalance();
+                sum += account.getBalance();
+            }
+            
+        } 
+        
+        finally {
+            rlock.unlock();
         }
+        
         System.out.println(Thread.currentThread().toString() + 
                 " Sum: " + sum);
         if (sum != numAccounts * initialBalance) {
@@ -51,6 +82,7 @@ public class Bank {
         }
     }
 
+    
     public int size() {
         return accounts.length;
     }
