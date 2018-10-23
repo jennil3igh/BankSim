@@ -1,5 +1,7 @@
 package edu.temple.cis.c3238.banksim;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * @author Cay Horstmann
  * @author Modified by Paul Wolfgang
@@ -10,9 +12,14 @@ public class Bank {
 
     public static final int NTEST = 10;
     private final Account[] accounts;
+    //private Account[] accounts;
     private long ntransacts = 0;
+    //private int initialBalance;
+    //private int numAccounts;
     private final int initialBalance;
     private final int numAccounts;
+    private final ReentrantLock rlock = new ReentrantLock();
+
 
     public Bank(int numAccounts, int initialBalance) {
         this.initialBalance = initialBalance;
@@ -25,20 +32,36 @@ public class Bank {
     }
 
     public void transfer(int from, int to, int amount) {
-//        accounts[from].waitForAvailableFunds(amount);
+        accounts[from].waitForSufficientFunds(amount);
+       
+        rlock.lock();
         if (accounts[from].withdraw(amount)) {
             accounts[to].deposit(amount);
         }
+        rlock.unlock();
+
+        //should a better version of the above go here?
         if (shouldTest()) test();
     }
 
-    public void test() {
+    public synchronized void test() {
         int sum = 0;
-        for (Account account : accounts) {
-            System.out.printf("%s %s%n", 
-                    Thread.currentThread().toString(), account.toString());
-            sum += account.getBalance();
+        
+        rlock.lock();
+
+        try{
+            for (Account account : accounts) {
+                System.out.printf("%s %s%n", 
+                        Thread.currentThread().toString(), account.toString());
+                sum += account.getBalance();
+            }
+        
         }
+        finally {
+            rlock.unlock();
+        }
+        
+        
         System.out.println(Thread.currentThread().toString() + 
                 " Sum: " + sum);
         if (sum != numAccounts * initialBalance) {
