@@ -7,8 +7,6 @@ package edu.temple.cis.c3238.banksim;
  */
 public class Account {
 
-    //private int balance;
-    //private int id;
     private volatile int balance;
     private final int id;
     private final Bank myBank;
@@ -48,7 +46,9 @@ public class Account {
         return String.format("Account[%d] balance %d", id, balance);
     }
     
+    //implementation of task 4
     public synchronized void waitForSufficientFunds(int amount){
+        //myBank.isOpen() to account for deadlock situation (Task 5)
         while (myBank.isOpen() && amount >= balance){
             try{
                 wait();
