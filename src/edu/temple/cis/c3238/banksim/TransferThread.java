@@ -29,6 +29,9 @@ class TransferThread extends Thread {
             bank.transfer(fromAccount, toAccount, amount);
             }
         }
+        
+        /* when one bank closes, it calls closeBank (closing them all) */
+        bank.closeBank();
     }
 }
 //AHHH
