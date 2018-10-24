@@ -12,13 +12,12 @@ public class Bank {
 
     public static final int NTEST = 10;
     private final Account[] accounts;
-    //private Account[] accounts;
     private long ntransacts = 0;
-    //private int initialBalance;
-    //private int numAccounts;
     private final int initialBalance;
     private final int numAccounts;
     private final ReentrantLock rlock = new ReentrantLock();
+    private boolean open = true;
+    
 
 
     public Bank(int numAccounts, int initialBalance) {
@@ -40,7 +39,6 @@ public class Bank {
         }
         rlock.unlock();
 
-        //should a better version of the above go here?
         if (shouldTest()) test();
     }
 
@@ -81,6 +79,19 @@ public class Bank {
     
     public boolean shouldTest() {
         return ++ntransacts % NTEST == 0;
+    }
+    
+    //to account for the deadlock situation (Task 5)
+    synchronized boolean isOpen() {return open;}
+    
+    //to account for the deadlock situation (Task 5)
+    void closeBank(){
+        synchronized(this){
+            open = false;
+        }
+        for(Account account : accounts){
+            synchronized (account) {account.notifyAll();}
+        }
     }
 
 }
