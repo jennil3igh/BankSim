@@ -16,6 +16,8 @@ public class Bank {
     private final int numAccounts;
     private final ReentrantLock rlock = new ReentrantLock();
 
+    private boolean open = true;
+    
     public Bank(int numAccounts, int initialBalance) {
         this.initialBalance = initialBalance;
         this.numAccounts = numAccounts;
@@ -28,22 +30,24 @@ public class Bank {
 
     public void transfer(int from, int to, int amount) {
    
-        rlock.lock();
-        if (accounts[from].withdraw(amount)) {
-            accounts[to].deposit(amount);
+        if (!open) {
+            return;
         }
-        rlock.unlock();
-
+        
+        /* waiting for amount <= balance via method call */
+        accounts[from].waitForSufficientFunds(amount);
+        
+        /* ReentrantLock used to manipulate account balances */
         rlock.lock();
         try {
-
             if (accounts[from].withdraw(amount)) {
                 accounts[to].deposit(amount);
             }
-
-        } finally {
+        }
+        finally {
             rlock.unlock();
         }
+        
         if (shouldTest()) {
             test();
         }
@@ -54,6 +58,10 @@ public class Bank {
         
         int sum = 0;
         
+        /*
+         * the shared part of this method is "account.getBalance"
+         * hence, we lock that part with a ReentrantLock
+         **/
         rlock.lock();
         
         try {
@@ -90,6 +98,28 @@ public class Bank {
     
     public boolean shouldTest() {
         return ++ntransacts % NTEST == 0;
+    }
+    
+    /* returns true when the account is open, false otherwise */    
+    public synchronized boolean isOpen() {
+        return open;
+    }
+    
+    /* method to satisfy Task 5; 
+     * closeBank() closes all accounts */
+    public void closeBank() {
+        
+        /* the open variable is shared and hence protected */
+        synchronized (this) {
+            open = false;
+        }
+        
+        /* wake up all waiting threads */
+        for (Account account : accounts) {
+            synchronized (account) {
+                account.notifyAll();
+            }
+        }
     }
 
 }
